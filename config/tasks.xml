@@ -1,0 +1,28 @@
+<tasks>
+	<task>
+		<name>some name</name>
+		<points>5</points>
+		<checked>true</checked>
+	</task>
+	<task>
+		<name>some2</name>
+		<points>3</points>
+		<checked>false</checked>
+	</task>
+	<task>
+		<name>dddd</name>
+		<points>213</points>
+		<checked>true</checked>
+	</task>
+	<task>
+		<name>asdada</name>
+		<points>22</points>
+		<checked>false</checked>
+	</task>
+	<task>
+		<name>ser</name>
+		<points>11</points>
+		<checked>true</checked>
+	</task>
+</tasks>
+
