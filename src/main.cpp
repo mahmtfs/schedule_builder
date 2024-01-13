@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
@@ -19,6 +20,9 @@
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
 #include "../includes/schedulBuilder/scheduleBuilder.h"
+#include "../includes/database/db.h"
+
+#include <iostream>
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -110,7 +114,7 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 
     // Our state
-    ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance("C:/Portfolio/projects/scheduleBuilder/config/tasks.xml");
+    ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance("C:/Portfolio/projects/scheduleBuilder/db/tasks.db");
     bool showTaskCreationWindow = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -155,10 +159,25 @@ int main(int, char**)
             ImGui::SameLine();
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            
+            std::vector<Task*> tasks = scheduleBuilder->getTasks();
 
-            for (Task *task : scheduleBuilder->getTasks()) {
-                ImGui::Checkbox(task->toString().c_str(), task->isChecked());
-                 
+            for (int i = 0; i < tasks.size(); i+=1) {
+                ImGui::PushID(i);
+                if (ImGui::Checkbox(tasks[i]->toString().c_str(), tasks[i]->isChecked())) {
+                    scheduleBuilder->updateTaskCheck(tasks[i]);
+                    std::cout << *(tasks[i]->isChecked()) << "\n";
+                }
+                
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0, 0.8f, 0.8f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0, 1.0f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0, 0.8f, 0.8f));
+                if (ImGui::Button("X")) {
+                    scheduleBuilder->deleteTask(tasks[i]);
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopID();
             }
             
             ImGui::End();
@@ -166,14 +185,29 @@ int main(int, char**)
 
         if (showTaskCreationWindow) {
             static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+            ImGui::SetNextWindowSize(ImVec2(300, 130));
             ImGui::Begin("New Task", &showTaskCreationWindow, flags);
             //ImGui::Text("You can add a new task here.");
             static std::string name;
-            ImGui::InputText("Name", &name);
             static int points = 0;
-            ImGui::InputInt("Points", &points);
-            if (ImGui::Button("Confirm") && !name.empty() && points > 0) {
-                Task* task = new Task(name, points, false);
+
+            ImGui::PushItemWidth(248);
+            ImGui::InputText("Name", &name);
+            ImGui::PushItemWidth(70);
+            ImGui::InputInt("Points", &points, 0);
+            static int hours = 0;
+            static int minutes = 0;
+            static int seconds = 0;
+            ImGui::BeginGroup();
+            ImGui::InputInt("H", &hours, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("M", &minutes, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("S", &seconds, 0);
+            ImGui::EndGroup();
+            if (ImGui::Button("Confirm") && !name.empty() && points > 0 && Time::correctTime(hours, minutes, seconds)) {
+                Time* time = new Time((hours < 10 ? "0" : "") + std::to_string(hours), (minutes < 10 ? "0" : "") + std::to_string(minutes), (seconds < 10 ? "0" : "") + std::to_string(seconds));
+                Task* task = new Task(name, points, time, false);
                 scheduleBuilder->addTask(task);
                 name = "";
                 points = 0;
