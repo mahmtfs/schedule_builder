@@ -14,4 +14,5 @@ public:
 	std::string getSeconds() { return seconds; };
 	std::string getTime() { return hours + ":" + minutes + ":" + seconds; };
 	static bool correctTime(int hours, int minutes, int seconds);
+	static bool correctSequence(int startHours, int startMinutes, int startSeconds, int endHours, int endMinutes, int endSeconds);
 };

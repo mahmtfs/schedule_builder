@@ -15,3 +15,7 @@ Time::Time(std::string hours, std::string minutes, std::string seconds) {
 bool Time::correctTime(int hours, int minutes, int seconds) {
 	return (hours < 24) && (hours >= 0) && (minutes < 60) && (minutes >= 0) && (seconds < 60) && (seconds >= 0);
 }
+
+bool Time::correctSequence(int startHours, int startMinutes, int startSeconds, int endHours, int endMinutes, int endSeconds) {
+	return correctTime(startHours, startMinutes, startSeconds) && correctTime(endHours, endMinutes, endSeconds) && ((startHours < endHours) || (startHours == endHours && startMinutes < endMinutes) || (startHours == endHours && startMinutes == endMinutes && startSeconds < endSeconds));
+}

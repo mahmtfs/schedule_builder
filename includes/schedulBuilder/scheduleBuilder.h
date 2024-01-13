@@ -17,6 +17,7 @@ class ScheduleBuilder {
 	std::vector<Task*> tasks;
 public:
 	static ScheduleBuilder* getInstance(std::string path);
+	~ScheduleBuilder() { db->close(); };
     ScheduleBuilder(ScheduleBuilder& other) = delete;
     void operator=(const ScheduleBuilder&) = delete;
 	void addTask(Task* task);
@@ -24,4 +25,6 @@ public:
 	void fillTasks();
 	void deleteTask(Task* task);
 	void updateTaskCheck(Task* task);
+	int totalPoints();
+	int checkedPoints();
 };

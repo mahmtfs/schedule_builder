@@ -116,6 +116,8 @@ int main(int, char**)
     // Our state
     ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance("C:/Portfolio/projects/scheduleBuilder/db/tasks.db");
     bool showTaskCreationWindow = false;
+    static float pointsSum = scheduleBuilder->checkedPoints();
+    static float totalPoints = scheduleBuilder->totalPoints();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
@@ -150,7 +152,7 @@ int main(int, char**)
             
             ImGui::SetNextWindowBgAlpha(1);
 
-            ImGui::Begin("Hello, world!", nullptr, flags);
+            ImGui::Begin(" ", nullptr, flags);
 
             if (ImGui::Button("Add Task")) {
                 showTaskCreationWindow = true;
@@ -158,15 +160,23 @@ int main(int, char**)
 
             ImGui::SameLine();
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("Total points: %d/%d (%.1f%%)", int(pointsSum), int(totalPoints), (totalPoints == 0) ? 0.0f : pointsSum / totalPoints * 100);
+
+            //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             
             std::vector<Task*> tasks = scheduleBuilder->getTasks();
+            totalPoints = scheduleBuilder->totalPoints();
 
             for (int i = 0; i < tasks.size(); i+=1) {
                 ImGui::PushID(i);
                 if (ImGui::Checkbox(tasks[i]->toString().c_str(), tasks[i]->isChecked())) {
                     scheduleBuilder->updateTaskCheck(tasks[i]);
-                    std::cout << *(tasks[i]->isChecked()) << "\n";
+                    if (*(tasks[i]->isChecked())) {
+                        pointsSum += tasks[i]->getPoints();
+                    }
+                    else {
+                        pointsSum -= tasks[i]->getPoints();
+                    }
                 }
                 
                 ImGui::SameLine();
@@ -174,6 +184,9 @@ int main(int, char**)
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0, 1.0f, 1.0f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0, 0.8f, 0.8f));
                 if (ImGui::Button("X")) {
+                    if (*(tasks[i]->isChecked())) {
+                        pointsSum -= tasks[i]->getPoints();
+                    }
                     scheduleBuilder->deleteTask(tasks[i]);
                 }
                 ImGui::PopStyleColor(3);
@@ -185,7 +198,7 @@ int main(int, char**)
 
         if (showTaskCreationWindow) {
             static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
-            ImGui::SetNextWindowSize(ImVec2(300, 130));
+            ImGui::SetNextWindowSize(ImVec2(300, 180));
             ImGui::Begin("New Task", &showTaskCreationWindow, flags);
             //ImGui::Text("You can add a new task here.");
             static std::string name;
@@ -195,24 +208,50 @@ int main(int, char**)
             ImGui::InputText("Name", &name);
             ImGui::PushItemWidth(70);
             ImGui::InputInt("Points", &points, 0);
-            static int hours = 0;
-            static int minutes = 0;
-            static int seconds = 0;
+            static int startHours = 0;
+            static int startMinutes = 0;
+            static int startSeconds = 0;
+            static int endHours = 0;
+            static int endMinutes = 0;
+            static int endSeconds = 0;
             ImGui::BeginGroup();
-            ImGui::InputInt("H", &hours, 0);
+            ImGui::PushID(1);
+            ImGui::Text("Start Time:");
+            ImGui::InputInt("H", &startHours, 0);
             ImGui::SameLine();
-            ImGui::InputInt("M", &minutes, 0);
+            ImGui::InputInt("M", &startMinutes, 0);
             ImGui::SameLine();
-            ImGui::InputInt("S", &seconds, 0);
+            ImGui::InputInt("S", &startSeconds, 0);
+            ImGui::PopID();
             ImGui::EndGroup();
-            if (ImGui::Button("Confirm") && !name.empty() && points > 0 && Time::correctTime(hours, minutes, seconds)) {
-                Time* time = new Time((hours < 10 ? "0" : "") + std::to_string(hours), (minutes < 10 ? "0" : "") + std::to_string(minutes), (seconds < 10 ? "0" : "") + std::to_string(seconds));
-                Task* task = new Task(name, points, time, false);
+
+            ImGui::BeginGroup();
+            ImGui::PushID(2);
+            ImGui::Text("End Time:");
+            ImGui::InputInt("H", &endHours, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("M", &endMinutes, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("S", &endSeconds, 0);
+            ImGui::PopID();
+            ImGui::EndGroup();
+
+            if (ImGui::Button("Confirm") && !name.empty() && points > 0 && Time::correctSequence(startHours, startMinutes, startSeconds, endHours, endMinutes, endSeconds)) {
+                Time* startTime = new Time((startHours < 10 ? "0" : "") + std::to_string(startHours), (startMinutes < 10 ? "0" : "") + std::to_string(startMinutes), (startSeconds < 10 ? "0" : "") + std::to_string(startSeconds));
+                Time* endTime = new Time((endHours < 10 ? "0" : "") + std::to_string(endHours), (endMinutes < 10 ? "0" : "") + std::to_string(endMinutes), (endSeconds < 10 ? "0" : "") + std::to_string(endSeconds));
+                Task* task = new Task(name, points, startTime, endTime, false);
                 scheduleBuilder->addTask(task);
                 name = "";
                 points = 0;
+                startHours = 0;
+                startMinutes = 0;
+                startSeconds = 0;
+                endHours = 0;
+                endMinutes = 0;
+                endSeconds = 0;
                 showTaskCreationWindow = false;
             }
+
             ImGui::End();
         }
 

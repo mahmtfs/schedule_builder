@@ -17,4 +17,5 @@ public:
 	void addTask(Task* task);
 	void deleteTask(Task* task);
 	void updateTaskCheck(Task* task);
+	void close() { sqlite3_close(db); };
 };

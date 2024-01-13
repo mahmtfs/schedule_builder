@@ -20,7 +20,7 @@ std::vector<Task*> ScheduleBuilder::getTasks() {
 
 void ScheduleBuilder::addTask(Task* task) {
 	tasks.push_back(task);
-	std::sort(tasks.begin(), tasks.end(), [](Task* a, Task* b) {return a->getTime()->getTime() < b->getTime()->getTime(); });
+	std::sort(tasks.begin(), tasks.end(), [](Task* a, Task* b) {return a->getEndTime()->getTime() < b->getEndTime()->getTime(); });
 	db->addTask(task);
 }
 
@@ -42,4 +42,22 @@ void ScheduleBuilder::deleteTask(Task* task) {
 
 void ScheduleBuilder::updateTaskCheck(Task* task) {
 	db->updateTaskCheck(task);
+}
+
+int ScheduleBuilder::totalPoints() {
+	int sum = 0;
+	for (Task* task : this->tasks) {
+		sum += task->getPoints();
+	}
+	return sum;
+}
+
+int ScheduleBuilder::checkedPoints() {
+	int sum = 0;
+	for (Task* task : this->tasks) {
+		if (*(task->isChecked())) {
+			sum += task->getPoints();
+		}
+	}
+	return sum;
 }
