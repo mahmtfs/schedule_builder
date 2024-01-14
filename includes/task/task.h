@@ -12,6 +12,7 @@ class Task {
 public:
 	Task(std::string name, unsigned int points, Time *startTime, Time *endTime, bool checked = false);
 	void setID(int id) { this->id = id; };
+	void check(bool check) { this->checked = check; };
 	bool* isChecked() { return &checked; };
 	int getID() { return this->id; };
 	std::string getName() { return name; };

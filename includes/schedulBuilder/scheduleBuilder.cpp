@@ -4,6 +4,12 @@ ScheduleBuilder* ScheduleBuilder::instance = nullptr;
 
 ScheduleBuilder::ScheduleBuilder(std::string path) {
 	db = DataBase::getInstance(path);
+	config = new Config("C:/Portfolio/projects/scheduleBuilder/config/config.xml");
+	std::string currentDate = Date::getCurrentDate();
+	if (currentDate > config->getLastVisited()) {
+		uncheckAll();
+		config->setLastVisited(currentDate);
+	}
 	fillTasks();
 }
 
@@ -60,4 +66,11 @@ int ScheduleBuilder::checkedPoints() {
 		}
 	}
 	return sum;
+}
+
+void ScheduleBuilder::uncheckAll() {
+	db->uncheckAll();
+	for (Task* task : this->tasks) {
+		task->check(false);
+	}
 }

@@ -60,3 +60,11 @@ void DataBase::updateTaskCheck(Task* task) {
 		std::cout << err << "\n";
 	}
 }
+
+void DataBase::uncheckAll() {
+	char* err;
+	std::string query = "UPDATE tasks SET checked=0;";
+	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
+		std::cout << err << "\n";
+	}
+}

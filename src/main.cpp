@@ -151,10 +151,12 @@ int main(int, char**)
             ImGui::SetNextWindowSize(viewport->WorkSize);
             
             ImGui::SetNextWindowBgAlpha(1);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(1500, 800), ImVec2(FLT_MAX, FLT_MAX));
 
             ImGui::Begin(" ", nullptr, flags);
-
-            if (ImGui::Button("Add Task")) {
+            ImGui::SetWindowFontScale(1.8);
+            //ImGui::SetWindowFontScale(1.2f);
+            if (ImGui::Button("Add Task", ImVec2(viewport->WorkSize.x / 7, ImGui::GetFontSize() * 1.3))) {
                 showTaskCreationWindow = true;
             }
 
@@ -197,16 +199,21 @@ int main(int, char**)
         }
 
         if (showTaskCreationWindow) {
+            ImVec2 winSize = ImGui::GetMainViewport()->Size;
+            //std::cout << winSize.x << " " << winSize.y << "\n";
             static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
-            ImGui::SetNextWindowSize(ImVec2(300, 180));
+            
+            ImGui::SetNextWindowSizeConstraints(ImVec2(270, 185 + ImGui::GetFontSize() * 3), ImVec2(FLT_MAX, 185 + ImGui::GetFontSize() * 3));
+            ImGui::SetNextWindowSize(ImVec2(winSize.x / 4, 185 + ImGui::GetFontSize() * 3));
             ImGui::Begin("New Task", &showTaskCreationWindow, flags);
+            ImGui::SetWindowFontScale(1.4);
             //ImGui::Text("You can add a new task here.");
             static std::string name;
             static int points = 0;
 
-            ImGui::PushItemWidth(248);
+            ImGui::PushItemWidth(winSize.x / 5);
             ImGui::InputText("Name", &name);
-            ImGui::PushItemWidth(70);
+            ImGui::PushItemWidth(winSize.x / 20);
             ImGui::InputInt("Points", &points, 0);
             static int startHours = 0;
             static int startMinutes = 0;
@@ -236,7 +243,7 @@ int main(int, char**)
             ImGui::PopID();
             ImGui::EndGroup();
 
-            if (ImGui::Button("Confirm") && !name.empty() && points > 0 && Time::correctSequence(startHours, startMinutes, startSeconds, endHours, endMinutes, endSeconds)) {
+            if (ImGui::Button("Confirm", ImVec2(winSize.x / 10, ImGui::GetFontSize() * 1.3)) && !name.empty() && points > 0 && Time::correctSequence(startHours, startMinutes, startSeconds, endHours, endMinutes, endSeconds)) {
                 Time* startTime = new Time((startHours < 10 ? "0" : "") + std::to_string(startHours), (startMinutes < 10 ? "0" : "") + std::to_string(startMinutes), (startSeconds < 10 ? "0" : "") + std::to_string(startSeconds));
                 Time* endTime = new Time((endHours < 10 ? "0" : "") + std::to_string(endHours), (endMinutes < 10 ? "0" : "") + std::to_string(endMinutes), (endSeconds < 10 ? "0" : "") + std::to_string(endSeconds));
                 Task* task = new Task(name, points, startTime, endTime, false);

@@ -1,19 +1,18 @@
 #pragma once
 #include "vector"
 #include "../task/task.h"
+#include "../config/config.h"
 #include "../database/db.h"
-#include "rapidxml.hpp"
-#include "rapidxml_iterators.hpp"
-#include "rapidxml_utils.hpp"
-#include "rapidxml_print.hpp"
+#include "../date/date.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 
 class ScheduleBuilder {
 	ScheduleBuilder(std::string path); 
-	static ScheduleBuilder* instance;
+	static ScheduleBuilder *instance;
 	DataBase *db;
+	Config *config;
 	std::vector<Task*> tasks;
 public:
 	static ScheduleBuilder* getInstance(std::string path);
@@ -27,4 +26,6 @@ public:
 	void updateTaskCheck(Task* task);
 	int totalPoints();
 	int checkedPoints();
+	Config* getConfig() { return config; };
+	void uncheckAll();
 };
