@@ -7,3 +7,6 @@ x64
 *db
 *rs
 *ico
+/schedule_builder.rc
+/resource.h
+/schedule_builder.aps

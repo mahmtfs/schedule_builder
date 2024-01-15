@@ -16,7 +16,7 @@ class ScheduleBuilder {
 	std::vector<Task*> tasks;
 public:
 	static ScheduleBuilder* getInstance();
-	~ScheduleBuilder();
+	~ScheduleBuilder() noexcept(false);
     ScheduleBuilder(ScheduleBuilder& other) = delete;
     void operator=(const ScheduleBuilder&) = delete;
 	void addTask(Task* task);

@@ -3,7 +3,7 @@
 ScheduleBuilder* ScheduleBuilder::instance = nullptr;
 
 ScheduleBuilder::ScheduleBuilder() {
-	config = new Config(".\\.\\config\\config.xml");
+	config = new Config("C:/Portfolio/projects/schedule_builder/config/config.xml");
 	db = DataBase::getInstance(config->getDatabasePath());
 	std::string currentDate = Date::getCurrentDate();
 	if (currentDate > config->getLastVisited()) {
@@ -13,7 +13,7 @@ ScheduleBuilder::ScheduleBuilder() {
 	fillTasks();
 }
 
-ScheduleBuilder::~ScheduleBuilder() {
+ScheduleBuilder::~ScheduleBuilder() noexcept(false) {
 	config->setNotes(*getNotes());
 }
 
