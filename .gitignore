@@ -3,5 +3,7 @@
 *vcxproj*
 *sln
 x64
-.xml
-.db
+*xml
+*db
+*rs
+*ico
