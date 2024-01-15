@@ -11,6 +11,8 @@ void Config::parseConfig() {
 	doc.parse<0>(xmlFile.data());
 	rapidxml::xml_node<>* root = doc.first_node("config");
 	lastVisited = root->first_node("last-visited")->value();
+	dbPath = root->first_node("db-path")->value();
+	notes = new std::string(root->first_node("notes")->value());
 }
 
 void Config::setLastVisited(std::string date) {
@@ -25,6 +27,13 @@ void Config::setLastVisited(std::string date) {
 	outFile.close();
 }
 
-std::string Config::getLastVisited() {
-	return lastVisited;
+void Config::setNotes(std::string notes) {
+	rapidxml::file<> xmlFile(path.c_str());
+	rapidxml::xml_document<> doc;
+	doc.parse<0x20 | 0x1>(xmlFile.data());
+	rapidxml::xml_node<>* notesNode = doc.first_node("config")->first_node("notes");
+	notesNode->value(notes.c_str());
+	std::ofstream outFile(path);
+	outFile << doc;
+	outFile.close();
 }

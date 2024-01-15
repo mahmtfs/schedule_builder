@@ -9,14 +9,14 @@
 #include <algorithm>
 
 class ScheduleBuilder {
-	ScheduleBuilder(std::string path); 
+	ScheduleBuilder(); 
 	static ScheduleBuilder *instance;
 	DataBase *db;
 	Config *config;
 	std::vector<Task*> tasks;
 public:
-	static ScheduleBuilder* getInstance(std::string path);
-	~ScheduleBuilder() { db->close(); };
+	static ScheduleBuilder* getInstance();
+	~ScheduleBuilder();
     ScheduleBuilder(ScheduleBuilder& other) = delete;
     void operator=(const ScheduleBuilder&) = delete;
 	void addTask(Task* task);
@@ -27,5 +27,6 @@ public:
 	int totalPoints();
 	int checkedPoints();
 	Config* getConfig() { return config; };
+	std::string* getNotes() { return config->getNotes(); };
 	void uncheckAll();
 };

@@ -2,9 +2,9 @@
 
 ScheduleBuilder* ScheduleBuilder::instance = nullptr;
 
-ScheduleBuilder::ScheduleBuilder(std::string path) {
-	db = DataBase::getInstance(path);
-	config = new Config("C:/Portfolio/projects/scheduleBuilder/config/config.xml");
+ScheduleBuilder::ScheduleBuilder() {
+	config = new Config(".\\.\\config\\config.xml");
+	db = DataBase::getInstance(config->getDatabasePath());
 	std::string currentDate = Date::getCurrentDate();
 	if (currentDate > config->getLastVisited()) {
 		uncheckAll();
@@ -13,9 +13,13 @@ ScheduleBuilder::ScheduleBuilder(std::string path) {
 	fillTasks();
 }
 
-ScheduleBuilder* ScheduleBuilder::getInstance(std::string path) {
+ScheduleBuilder::~ScheduleBuilder() {
+	config->setNotes(*getNotes());
+}
+
+ScheduleBuilder* ScheduleBuilder::getInstance() {
 	if (instance == nullptr) {
-		instance = new ScheduleBuilder(path);
+		instance = new ScheduleBuilder();
 	}
 	return instance;
 }

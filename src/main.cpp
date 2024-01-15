@@ -114,7 +114,7 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 
     // Our state
-    ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance("C:/Portfolio/projects/scheduleBuilder/db/tasks.db");
+    ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance();
     bool showTaskCreationWindow = false;
     static float pointsSum = scheduleBuilder->checkedPoints();
     static float totalPoints = scheduleBuilder->totalPoints();
@@ -197,6 +197,20 @@ int main(int, char**)
             
             ImGui::End();
         }
+           
+        {
+            ImGui::SetNextWindowBgAlpha(1);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(FLT_MAX, FLT_MAX));
+
+            ImGui::Begin("Notes");
+            ImGui::SetWindowFontScale(1.8);
+            
+            ImVec2 winSize = ImGui::GetWindowSize();
+            
+            ImGui::InputTextMultiline("##notes", scheduleBuilder->getNotes(), ImVec2(winSize.x - 15, winSize.y - 50));
+            
+            ImGui::End();
+        }
 
         if (showTaskCreationWindow) {
             ImVec2 winSize = ImGui::GetMainViewport()->Size;
@@ -273,6 +287,9 @@ int main(int, char**)
 
         glfwSwapBuffers(window);
     }
+
+    delete scheduleBuilder;
+
 #ifdef __EMSCRIPTEN__
     EMSCRIPTEN_MAINLOOP_END;
 #endif
