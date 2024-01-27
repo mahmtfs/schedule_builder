@@ -10,3 +10,5 @@ x64
 /schedule_builder.rc
 /resource.h
 /schedule_builder.aps
+*temp
+*Debug

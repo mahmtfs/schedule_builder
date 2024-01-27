@@ -1,11 +1,11 @@
 #pragma once
-#include "../../libs/sqlite/sqlite3.h"
-#include "../task/task.h"
 #include <string>
 #include <vector>
 #include <iostream>
+#include "../task/task.h"
+#include "../../libs/sqlite/sqlite3.h"
 
-class DataBase {
+class __declspec(dllexport) DataBase {
 	DataBase(std::string path);
 	static DataBase* instance;
 	sqlite3* db;

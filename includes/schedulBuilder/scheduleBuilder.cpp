@@ -3,18 +3,14 @@
 ScheduleBuilder* ScheduleBuilder::instance = nullptr;
 
 ScheduleBuilder::ScheduleBuilder() {
-	config = new Config("C:/Portfolio/projects/schedule_builder/config/config.xml");
-	db = DataBase::getInstance(config->getDatabasePath());
+	this->config = new Config(".\\.\\config\\config.xml");
+	this->db = DataBase::getInstance(this->config->getDatabasePath());
 	std::string currentDate = Date::getCurrentDate();
-	if (currentDate > config->getLastVisited()) {
+	if (currentDate > this->config->getLastVisited()) {
 		uncheckAll();
-		config->setLastVisited(currentDate);
+		this->config->setLastVisited(currentDate);
 	}
 	fillTasks();
-}
-
-ScheduleBuilder::~ScheduleBuilder() noexcept(false) {
-	config->setNotes(*getNotes());
 }
 
 ScheduleBuilder* ScheduleBuilder::getInstance() {
@@ -25,24 +21,24 @@ ScheduleBuilder* ScheduleBuilder::getInstance() {
 }
 
 std::vector<Task*> ScheduleBuilder::getTasks() {
-	return tasks;
+	return this->tasks;
 }
 
 void ScheduleBuilder::addTask(Task* task) {
-	tasks.push_back(task);
-	std::sort(tasks.begin(), tasks.end(), [](Task* a, Task* b) {return a->getEndTime()->getTime() < b->getEndTime()->getTime(); });
-	db->addTask(task);
+	this->tasks.push_back(task);
+	std::sort(this->tasks.begin(), this->tasks.end(), [](Task* a, Task* b) {return a->getEndTime()->getTime() < b->getEndTime()->getTime(); });
+	this->db->addTask(task);
 }
 
 void ScheduleBuilder::fillTasks() {
-	tasks.clear();
+	this->tasks.clear();
 	for (Task* task : db->getTasks()) {
 		this->tasks.push_back(task);
 	}
 }
 
 void ScheduleBuilder::deleteTask(Task* task) {
-	db->deleteTask(task);
+	this->db->deleteTask(task);
 	for (int i = 0; i < this->tasks.size(); i+=1) {
 		if (this->tasks[i]->getID() == task->getID()) {
 			this->tasks.erase(this->tasks.begin() + i);
@@ -51,7 +47,7 @@ void ScheduleBuilder::deleteTask(Task* task) {
 }
 
 void ScheduleBuilder::updateTaskCheck(Task* task) {
-	db->updateTaskCheck(task);
+	this->db->updateTaskCheck(task);
 }
 
 int ScheduleBuilder::totalPoints() {
@@ -73,7 +69,7 @@ int ScheduleBuilder::checkedPoints() {
 }
 
 void ScheduleBuilder::uncheckAll() {
-	db->uncheckAll();
+	this->db->uncheckAll();
 	for (Task* task : this->tasks) {
 		task->check(false);
 	}

@@ -1,16 +1,6 @@
+<?xml version="1.0" encoding="us-ascii"?>
 <config>
-	<last-visited>2024/01/15</last-visited>
-	<db-path>C:/Portfolio/projects/schedule_builder/db/tasks.db</db-path>
-	<notes>Today:
-word wrapping - pending...
-refactoring - pending...
-contact Ryan - pending...
-prepare for college - pending...
-
-
-Eventually:
-diploma - pending...
-vaccinations (optional) - pending...
-</notes>
+	<last-visited>2024/01/25</last-visited>
+	<db-path>.\\.\\db\\tasks.db</db-path>
 </config>
 

@@ -2,7 +2,7 @@
 #include <string>
 #include "../time/time.h"
 
-class Task {
+class __declspec(dllexport) Task {
 	int id = 0;
 	std::string name;
 	unsigned int points;

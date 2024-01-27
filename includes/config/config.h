@@ -1,22 +1,20 @@
 #pragma once
 #include <string>
-#include <iostream>
-#include "rapidxml.hpp"
-#include "rapidxml_iterators.hpp"
-#include "rapidxml_utils.hpp"
-#include "rapidxml_print.hpp"
+#include <vector>
+#include "../../libs/rapidxml/rapidxml.hpp"
+//#include "rapidxml.hpp"
+#include "../../libs/rapidxml/rapidxml_iterators.hpp"
+#include "../../libs/rapidxml/rapidxml_utils.hpp"
+#include "../../libs/rapidxml/rapidxml_print.hpp"
 
-class Config {
+class __declspec(dllexport) Config {
 	std::string path;
 	std::string lastVisited;
 	std::string dbPath;
-	std::string* notes;
 	void parseConfig();
 public:
 	Config(std::string path);
 	void setLastVisited(std::string date);
 	std::string getLastVisited() { return lastVisited; };
 	std::string getDatabasePath() { return dbPath; };
-	std::string* getNotes() { return notes; };
-	void setNotes(std::string notes);
 };

@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
-#include <iostream>
 
-class Time {
+class __declspec(dllexport) Time {
 	std::string hours;
 	std::string minutes;
 	std::string seconds;

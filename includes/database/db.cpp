@@ -7,7 +7,7 @@ DataBase::DataBase(std::string path) {
 	sqlite3_open(path.c_str(), &db);
 	std::string query = "CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY, task_name VARCHAR(50), points INT, start_time TEXT, end_time TEXT, checked INT);";
 	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
-		std::cout << err << "\n";
+		std::cerr << err << "\n";
 	}
 }
 
@@ -40,7 +40,7 @@ void DataBase::addTask(Task* task) {
 	char* err;
 	std::string query = "INSERT INTO tasks (task_name, points, start_time, end_time, checked) VALUES('"+task->getName()+"', "+std::to_string(task->getPoints())+", '"+task->getStartTime()->getTime()+"', '"+task->getEndTime()->getTime()+"', "+std::to_string(int(*(task->isChecked())))+");";
 	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
-		std::cout << err << "\n";
+		std::cerr << err << "\n";
 	}
 	task->setID((int)sqlite3_last_insert_rowid(db));
 }
@@ -49,7 +49,7 @@ void DataBase::deleteTask(Task* task) {
 	char* err;
 	std::string query = "DELETE FROM tasks WHERE id="+std::to_string(task->getID())+";";
 	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
-		std::cout << err << "\n";
+		std::cerr << err << "\n";
 	}
 }
 
@@ -57,7 +57,7 @@ void DataBase::updateTaskCheck(Task* task) {
 	char* err;
 	std::string query = "UPDATE tasks SET checked="+std::to_string(int(*(task->isChecked())))+" WHERE id="+std::to_string(task->getID())+";";
 	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
-		std::cout << err << "\n";
+		std::cerr << err << "\n";
 	}
 }
 
@@ -65,6 +65,6 @@ void DataBase::uncheckAll() {
 	char* err;
 	std::string query = "UPDATE tasks SET checked=0;";
 	if (sqlite3_exec(db, query.c_str(), NULL, NULL, &err) != SQLITE_OK) {
-		std::cout << err << "\n";
+		std::cerr << err << "\n";
 	}
 }
