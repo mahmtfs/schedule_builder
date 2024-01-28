@@ -51,3 +51,7 @@
 .no-decoration{
     text-decoration: none;
 }
+
+.floater{
+    position: fixed;
+}
