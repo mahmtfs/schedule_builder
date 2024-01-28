@@ -1,0 +1,53 @@
+.mt-1pt{
+    margin-top: 1%;
+}
+
+.mb-1pt{
+    margin-bottom: 1%;
+}
+
+.mt-2pt{
+    margin-top: 2%;
+}
+
+.mb-2pt{
+    margin-bottom: 2%;
+}
+
+.mt-3pt{
+    margin-top: 3%;
+}
+
+.mb-3pt{
+    margin-bottom: 3%;
+}
+
+.mt-5pt{
+    margin-top: 5%;
+}
+
+.mb-5pt{
+    margin-bottom: 5%;
+}
+
+.tiny-note{
+    font-size: xx-small;
+    color: rgb(129, 129, 129);
+}
+
+.formal-note{
+    color:rgb(90, 90, 90)
+}
+
+.title-text{
+    font-size: large;
+    font-weight: bold;
+}
+
+.bordered{
+    border: solid rgb(0, 0, 0) 1px;
+}
+
+.no-decoration{
+    text-decoration: none;
+}
