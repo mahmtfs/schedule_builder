@@ -3,3 +3,12 @@
 *vcxproj*
 *sln
 x64
+*xml
+*db
+*rs
+*ico
+/schedule_builder.rc
+/resource.h
+/schedule_builder.aps
+*temp
+*Debug

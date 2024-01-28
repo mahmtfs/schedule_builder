@@ -1,51 +1,69 @@
-// Dear ImGui: standalone example application for DirectX 9
-
-// Learn about Dear ImGui:
-// - FAQ                  https://dearimgui.com/faq
-// - Getting Started      https://dearimgui.com/getting-started
-// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
-// - Introduction, links and more at the top of imgui.cpp
-
 #include "imgui.h"
-#include "imgui_impl_dx9.h"
-#include "imgui_impl_win32.h"
-#include <d3d9.h>
-#include <tchar.h>
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_internal.h"
+#include "imgui_stdlib.h"
+#include <stdio.h>
 
-// Data
-static LPDIRECT3D9              g_pD3D = nullptr;
-static LPDIRECT3DDEVICE9        g_pd3dDevice = nullptr;
-static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
-static D3DPRESENT_PARAMETERS    g_d3dpp = {};
+#define GL_SILENCE_DEPRECATION
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <GLES2/gl2.h>
+#endif
 
-// Forward declarations of helper functions
-bool CreateDeviceD3D(HWND hWnd);
-void CleanupDeviceD3D();
-void ResetDevice();
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-// Main code
-int main(int, char**)
+#include "..\libs\glfw\glfw-3.3.8.bin.WIN64\include\GLFW\glfw3.h"
+
+#include "../includes/schedulBuilder/scheduleBuilder.h"
+#include "../includes/database/db.h"
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
+#pragma comment(lib, "legacy_stdio_definitions")
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "../libs/emscripten/emscripten_mainloop_stub.h"
+#endif
+
+static void glfw_error_callback(int error, const char* description)
 {
-    // Create application window
-    //ImGui_ImplWin32_EnableDpiAwareness();
-    WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
-    ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX9 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
 
-    // Initialize Direct3D
-    if (!CreateDeviceD3D(hwnd))
-    {
-        CleanupDeviceD3D();
-        ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
+
+int WinMain()
+{
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit())
         return 1;
-    }
 
-    // Show the window
-    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-    ::UpdateWindow(hwnd);
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+    // GL ES 2.0 + GLSL 100
+    const char* glsl_version = "#version 100";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#elif defined(__APPLE__)
+    // GL 3.2 + GLSL 150
+    const char* glsl_version = "#version 150";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+#else
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
 
-    // Setup Dear ImGui context
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Schedule Builder", nullptr, nullptr);
+    if (window == nullptr)
+        return 1;
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); // Enable vsync
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -57,194 +75,172 @@ int main(int, char**)
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX9_Init(g_pd3dDevice);
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+#ifdef __EMSCRIPTEN__
+    ImGui_ImplGlfw_InstallEmscriptenCanvasResizeCallback("#canvas");
+#endif
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);
+    static ScheduleBuilder* scheduleBuilder = ScheduleBuilder::getInstance();
 
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    bool showTaskCreationWindow = false;
+    static float pointsSum = scheduleBuilder->checkedPoints();
+    static float totalPoints = scheduleBuilder->totalPoints();
 
     // Main loop
-    bool done = false;
-    while (!done)
+#ifdef __EMSCRIPTEN__
+    io.IniFilename = nullptr;
+    EMSCRIPTEN_MAINLOOP_BEGIN
+#else
+    while (!glfwWindowShouldClose(window))
+#endif
     {
-        // Poll and handle messages (inputs, window resize, etc.)
-        // See the WndProc() function below for our to dispatch events to the Win32 backend.
-        MSG msg;
-        while (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
-        {
-            ::TranslateMessage(&msg);
-            ::DispatchMessage(&msg);
-            if (msg.message == WM_QUIT)
-                done = true;
-        }
-        if (done)
-            break;
+        glfwPollEvents();
 
-        // Handle window resize (we don't resize directly in the WM_SIZE handler)
-        if (g_ResizeWidth != 0 && g_ResizeHeight != 0)
-        {
-            g_d3dpp.BackBufferWidth = g_ResizeWidth;
-            g_d3dpp.BackBufferHeight = g_ResizeHeight;
-            g_ResizeWidth = g_ResizeHeight = 0;
-            ResetDevice();
-        }
-
-        // Start the Dear ImGui frame
-        ImGui_ImplDX9_NewFrame();
-        ImGui_ImplWin32_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
+            static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->WorkPos);
+            ImGui::SetNextWindowSize(viewport->WorkSize);
+            
+            ImGui::SetNextWindowBgAlpha(1);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(1500, 800), ImVec2(FLT_MAX, FLT_MAX));
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
+            ImGui::Begin(" ", nullptr, flags);
+            ImGui::SetWindowFontScale(1.8);
+            //ImGui::SetWindowFontScale(1.2f);
+            if (ImGui::Button("Add Task", ImVec2(viewport->WorkSize.x / 7, ImGui::GetFontSize() * 1.3))) {
+                showTaskCreationWindow = true;
+            }
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("Total points: %d/%d (%.1f%%)", int(pointsSum), int(totalPoints), (totalPoints == 0) ? 0.0f : pointsSum / totalPoints * 100);
+            
+            std::vector<Task*> tasks = scheduleBuilder->getTasks();
+            totalPoints = scheduleBuilder->totalPoints();
+
+            for (int i = 0; i < tasks.size(); i+=1) {
+                ImGui::PushID(i);
+                if (ImGui::Checkbox(tasks[i]->toString().c_str(), tasks[i]->isChecked())) {
+                    scheduleBuilder->updateTaskCheck(tasks[i]);
+                    if (*(tasks[i]->isChecked())) {
+                        pointsSum += tasks[i]->getPoints();
+                    }
+                    else {
+                        pointsSum -= tasks[i]->getPoints();
+                    }
+                }
+                
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0, 0.8f, 0.8f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0, 1.0f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0, 0.8f, 0.8f));
+                if (ImGui::Button("X")) {
+                    if (*(tasks[i]->isChecked())) {
+                        pointsSum -= tasks[i]->getPoints();
+                    }
+                    scheduleBuilder->deleteTask(tasks[i]);
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopID();
+            }
+            
             ImGui::End();
         }
 
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
+        if (showTaskCreationWindow) {
+            ImVec2 winSize = ImGui::GetMainViewport()->Size;
+            static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+            
+            ImGui::SetNextWindowSizeConstraints(ImVec2(270, 185 + ImGui::GetFontSize() * 3), ImVec2(FLT_MAX, 185 + ImGui::GetFontSize() * 3));
+            ImGui::SetNextWindowSize(ImVec2(winSize.x / 4, 185 + ImGui::GetFontSize() * 3));
+            ImGui::Begin("New Task", &showTaskCreationWindow, flags);
+            ImGui::SetWindowFontScale(1.4);
+
+            static std::string name;
+            static int points = 0;
+
+            ImGui::PushItemWidth(winSize.x / 5);
+            ImGui::InputText("Name", &name);
+            ImGui::PushItemWidth(winSize.x / 20);
+            ImGui::InputInt("Points", &points, 0);
+            static int startHours = 0;
+            static int startMinutes = 0;
+            static int startSeconds = 0;
+            static int endHours = 0;
+            static int endMinutes = 0;
+            static int endSeconds = 0;
+            ImGui::BeginGroup();
+            ImGui::PushID(1);
+            ImGui::Text("Start Time:");
+            ImGui::InputInt("H", &startHours, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("M", &startMinutes, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("S", &startSeconds, 0);
+            ImGui::PopID();
+            ImGui::EndGroup();
+
+            ImGui::BeginGroup();
+            ImGui::PushID(2);
+            ImGui::Text("End Time:");
+            ImGui::InputInt("H", &endHours, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("M", &endMinutes, 0);
+            ImGui::SameLine();
+            ImGui::InputInt("S", &endSeconds, 0);
+            ImGui::PopID();
+            ImGui::EndGroup();
+
+            if (ImGui::Button("Confirm", ImVec2(winSize.x / 10, ImGui::GetFontSize() * 1.3)) && !name.empty() && points > 0 && Time::correctSequence(startHours, startMinutes, startSeconds, endHours, endMinutes, endSeconds)) {
+                Time* startTime = new Time((startHours < 10 ? "0" : "") + std::to_string(startHours), (startMinutes < 10 ? "0" : "") + std::to_string(startMinutes), (startSeconds < 10 ? "0" : "") + std::to_string(startSeconds));
+                Time* endTime = new Time((endHours < 10 ? "0" : "") + std::to_string(endHours), (endMinutes < 10 ? "0" : "") + std::to_string(endMinutes), (endSeconds < 10 ? "0" : "") + std::to_string(endSeconds));
+                Task* task = new Task(name, points, startTime, endTime, false);
+                scheduleBuilder->addTask(task);
+                name = "";
+                points = 0;
+                startHours = 0;
+                startMinutes = 0;
+                startSeconds = 0;
+                endHours = 0;
+                endMinutes = 0;
+                endSeconds = 0;
+                showTaskCreationWindow = false;
+            }
+
             ImGui::End();
         }
 
         // Rendering
-        ImGui::EndFrame();
-        g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-        g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-        g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-        D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * clear_color.w * 255.0f), (int)(clear_color.y * clear_color.w * 255.0f), (int)(clear_color.z * clear_color.w * 255.0f), (int)(clear_color.w * 255.0f));
-        g_pd3dDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
-        if (g_pd3dDevice->BeginScene() >= 0)
-        {
-            ImGui::Render();
-            ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-            g_pd3dDevice->EndScene();
-        }
-        HRESULT result = g_pd3dDevice->Present(nullptr, nullptr, nullptr, nullptr);
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Handle loss of D3D9 device
-        if (result == D3DERR_DEVICELOST && g_pd3dDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
-            ResetDevice();
+        glfwSwapBuffers(window);
     }
 
-    ImGui_ImplDX9_Shutdown();
-    ImGui_ImplWin32_Shutdown();
+    delete scheduleBuilder;
+
+#ifdef __EMSCRIPTEN__
+    EMSCRIPTEN_MAINLOOP_END;
+#endif
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    CleanupDeviceD3D();
-    ::DestroyWindow(hwnd);
-    ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
-}
-
-// Helper functions
-
-bool CreateDeviceD3D(HWND hWnd)
-{
-    if ((g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == nullptr)
-        return false;
-
-    // Create the D3DDevice
-    ZeroMemory(&g_d3dpp, sizeof(g_d3dpp));
-    g_d3dpp.Windowed = TRUE;
-    g_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-    g_d3dpp.BackBufferFormat = D3DFMT_UNKNOWN; // Need to use an explicit format with alpha if needing per-pixel alpha composition.
-    g_d3dpp.EnableAutoDepthStencil = TRUE;
-    g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-    g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;           // Present with vsync
-    //g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;   // Present without vsync, maximum unthrottled framerate
-    if (g_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice) < 0)
-        return false;
-
-    return true;
-}
-
-void CleanupDeviceD3D()
-{
-    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = nullptr; }
-    if (g_pD3D) { g_pD3D->Release(); g_pD3D = nullptr; }
-}
-
-void ResetDevice()
-{
-    ImGui_ImplDX9_InvalidateDeviceObjects();
-    HRESULT hr = g_pd3dDevice->Reset(&g_d3dpp);
-    if (hr == D3DERR_INVALIDCALL)
-        IM_ASSERT(0);
-    ImGui_ImplDX9_CreateDeviceObjects();
-}
-
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-// Win32 message handler
-// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-// - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-// - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-// Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-        return true;
-
-    switch (msg)
-    {
-    case WM_SIZE:
-        if (wParam == SIZE_MINIMIZED)
-            return 0;
-        g_ResizeWidth = (UINT)LOWORD(lParam); // Queue resize
-        g_ResizeHeight = (UINT)HIWORD(lParam);
-        return 0;
-    case WM_SYSCOMMAND:
-        if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-            return 0;
-        break;
-    case WM_DESTROY:
-        ::PostQuitMessage(0);
-        return 0;
-    }
-    return ::DefWindowProcW(hWnd, msg, wParam, lParam);
 }
